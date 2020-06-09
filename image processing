@@ -1,0 +1,252 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed May  6 22:59:36 2020
+
+@author: pawansapkota
+"""
+
+# -*- coding: utf-8 -*-
+"""
+Spyder Editor
+
+This is a temporary script file.
+"""
+'This code was modified from https://towardsdatascience.com/image-pre-processing-c1aec0be3edf'
+#Reference : https://moodle.selu.edu/moodle/pluginfile.php/3146362/mod_resource/content/1/Edge_Detection_Image_Gradient.py
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.ndimage import convolve
+from skimage.filters import gaussian
+import cv2
+
+
+# reading input image
+
+img = cv2.imread('/Users/pawansapkota/Desktop/mobile-lung-cancer-scanning-to-be-rolled-out-across-england-315236.jpg', cv2.IMREAD_GRAYSCALE)
+#print(img.shape)
+#img = np.zeros(shape=(130,130),dtype=np.float32)
+
+#img = img[:,:,None] # Add singleton dimension
+kernel_h = [[-1,-1,-1],
+            [2,2,2],
+            [-1,-1,-1]]
+
+kernel_v = [[-1,2,-1],
+            [-1,2,-1],
+            [-1,2,-1]]
+
+kernel_d = [[-1,-1,2],
+            [-1,2,-1],
+            [2,-1,-1]]
+
+img_edge_h = convolve(img, kernel_h) 
+img_edge_v = convolve(img, kernel_v)
+img_edge_d = convolve(img, kernel_d)
+
+plt.figure()
+plt.imshow(img, cmap = 'gray')
+plt.title('Input Image')
+
+
+plt.figure()
+plt.imshow(img_edge_h, cmap = 'gray')
+plt.title('Horizontal Edges')
+
+plt.figure()
+plt.imshow(img_edge_v, cmap = 'gray')
+plt.title('Vertical Edges')
+
+plt.figure()
+plt.imshow(img_edge_d, cmap = 'gray')
+plt.title('Diagonal Edges')
+
+
+#Image Gradient
+kernel_gradient_x = [[0,0,0],
+                     [-1,0,1],
+                     [0,0,0]]
+
+kernel_gradient_y = [[0,-1,0],
+                     [0,0,0],
+                     [0,1,0]]
+
+img_gradient_x = convolve(img, kernel_gradient_x)
+img_gradient_y = convolve(img, kernel_gradient_y)
+
+plt.figure()
+plt.imshow(img_gradient_x, cmap = 'gray')
+plt.title('Gradient in Direction of X (Vertical Edges)')
+
+plt.figure()
+plt.imshow(img_gradient_y, cmap = 'gray')
+plt.title('Gradient in Direction of Y (Horizontal Edges)')
+
+def gradientImage(img):
+    num_rows, num_cols = img.shape
+    img_flt_x = np.zeros([num_rows, num_cols])
+    img_flt_y = np.zeros([num_rows, num_cols])
+    img_pad = np.pad(img, (1,1), 'edge')
+    for x in range(0, num_rows):
+        for y in range(0, num_cols):
+            img_flt_x[x,y] = (img_pad[x+1,y]-img_pad[x-1,y])/2
+            img_flt_y[x,y] = (img_pad[x,y+1]-img_pad[x,y-1])/2
+    return img_flt_x, img_flt_y
+
+img_gs = gaussian(img, sigma=1)    
+img_grad_x, img_grad_y =gradientImage(img_gs)
+
+plt.figure()
+plt.imshow(img_grad_x, cmap = 'gray')
+plt.title('Gradient in Direction of X (Without convolution)')    
+
+plt.figure()
+plt.imshow(img_grad_y, cmap = 'gray')
+plt.title('Gradient in Direction of Y (Without convolution)')  
+
+plt.figure()
+plt.imshow(img_grad_x + img_grad_y, cmap = 'gray')
+plt.title('Gradient of Input Image (WITHOUT convolution)')  
+ 
+def laplacianImage(img):
+    num_rows, num_cols = img.shape
+    img_flt_xx = np.zeros([num_rows, num_cols])
+    img_flt_yy = np.zeros([num_rows, num_cols])
+    img_pad = np.pad(img, (2,2), 'edge')
+    for x in range(0, num_rows):
+        for y in range(0, num_cols):
+            img_flt_xx[x,y] = (img_pad[x+2,y]-2*img_pad[x,y]+img_pad[x-2,y])/4
+            img_flt_yy[x,y] = (img_pad[x,y+2]-2*img_pad[x,y]+img_pad[x,y-2])/4
+    return img_flt_xx, img_flt_yy
+
+img_gs = gaussian(img, sigma=1)    
+img_grad_xx, img_grad_yy =laplacianImage(img_gs)
+
+plt.figure()
+plt.imshow(img_grad_xx, cmap = 'gray')
+plt.title('Laplacian in Direction of X (WO convolution)')    
+
+plt.figure()
+plt.imshow(img_grad_yy, cmap = 'gray')
+plt.title('Laplacian in Direction of Y (WO convolution)')  
+
+plt.figure()
+plt.imshow(img_grad_xx + img_grad_yy, cmap = 'gray')
+plt.title('Laplacian of Input Image (WO convolution)') 
+
+#Difference of Gaussian
+img_gs1 = gaussian(img, sigma = 3)
+img_gs2 = gaussian(img, sigma = 5)
+
+plt.figure()
+plt.imshow(img_gs1, cmap = 'gray')
+plt.title('Gaussian Blurred image 1 where sigma = 3')    
+
+plt.figure()
+plt.imshow(img_gs2, cmap = 'gray')
+plt.title('Gaussian Blurred image 2 where sigma = 5')    
+
+img_diff = img_gs2 - img_gs1
+
+plt.figure()
+plt.imshow(img_diff, cmap = 'gray')
+plt.title('Difference of Gaussian Image')    
+
+new_img = img.copy()
+print (new_img.shape)
+print(new_img.ndim)
+#gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+ret, thresh = cv2.threshold(new_img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+# Displaying segmented images
+def display(a, b, title1 = "Original", title2 = "Edited"):
+    plt.subplot(121), plt.imshow(a), plt.title(title1)
+    plt.xticks([]), plt.yticks([])
+    plt.subplot(122), plt.imshow(b), plt.title(title2)
+    plt.xticks([]), plt.yticks([])
+    plt.show()
+    
+    
+#gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+ret, thresh = cv2.threshold(new_img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+display(img, thresh, 'Original', 'Segmented')
+
+
+kernel = np.ones((3, 3), np.uint8)
+opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=2)
+
+# sure background area
+sure_bg = cv2.dilate(opening, kernel, iterations=3)
+
+# Finding sure foreground area
+dist_transform = cv2.distanceTransform(opening, cv2.DIST_L2, 5)
+ret, sure_fg = cv2.threshold(dist_transform, 0.7 * dist_transform.max(), 255, 0)
+
+# Finding unknown region
+sure_fg = np.uint8(sure_fg)
+unknown = cv2.subtract(sure_bg, sure_fg)
+
+new_img1= cv2.imread('/Users/pawansapkota/Desktop/mobile-lung-cancer-scanning-to-be-rolled-out-across-england-315236.jpg')
+
+#Displaying segmented back ground
+display(new_img1, sure_bg, 'Original', 'Segmented Background')
+
+
+# Marker labelling
+ret, markers = cv2.connectedComponents(sure_fg)
+
+# Add one to all labels so that sure background is not 0, but 1
+markers = markers + 1
+
+# Now, mark the region of unknown with zero
+markers[unknown == 255] = 0
+
+markers = cv2.watershed(new_img1, markers)
+new_img1[markers == -1] = [255, 0, 0]
+
+# Displaying markers on the image
+display(new_img1, markers, 'Original', 'Marked')
+from PIL import Image
+
+image_1 = np.array(Image.open('/Users/pawansapkota/Desktop/mobile-lung-cancer-scanning-to-be-rolled-out-across-england-315236.jpg'), np.float)
+
+def circle_points(resolution, center, radius):
+    """
+    Generate points which define a circle on an image.Centre refers to the centre of the circle
+    """   
+    radians = np.linspace(0, 2*np.pi, resolution)
+    c = center[1] + radius*np.cos(radians)#polar co-ordinates
+    r = center[0] + radius*np.sin(radians)
+    
+    return np.array([c, r]).T
+# Exclude last point because a closed path should not have duplicate points
+points = circle_points(100, [180, 320], 180)[:-1]
+
+def image_show(image_1, nrows=1, ncols=1, cmap='gray'):
+    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=(14, 14))
+    ax.imshow((image_1), cmap='gray')
+    ax.axis('off')
+    return fig, ax
+fig, ax = image_show(image_1)
+ax.plot(points[:, 0], points[:, 1], '--r', lw=3)
+from skimage.segmentation import active_contour
+snake = active_contour(image_1, points)
+fig, ax = image_show(image_1)
+ax.plot(points[:, 0], points[:, 1], '--r', lw=3)
+ax.plot(snake[:, 0], snake[:, 1], '-b', lw=3);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
