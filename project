@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon May 11 10:54:30 2020
+
+@author: pawansapkota
+"""
+
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Mar 12 09:36:24 2020
+
+@author: pawansapkota
+"""
+import matplotlib.pyplot as plt
+from skimage.filters import median
+import numpy as np
+import random
+import cv2
+from skimage.exposure import adjust_gamma, adjust_log, equalize_hist
+
+
+img= cv2.imread('/Users/pawansapkota/Desktop/mobile-lung-cancer-scanning-to-be-rolled-out-across-england-315236.jpg', cv2.IMREAD_GRAYSCALE)
+plt.figure(1)
+plt.imshow(img, cmap = 'gray')
+plt.title('Input Image')
+
+img_adjustLog = adjust_log(img)
+
+plt.figure(12)
+plt.imshow(img_adjustLog)
+plt.title('LOG transformed image')
+
+img_gamma1 = adjust_gamma(img, gamma = 6)
+
+plt.figure(2)
+plt.imshow(img_gamma1, cmap = 'gray')
+plt.title('Gamma Corrected Image 1')
+
+img_gamma_2 = adjust_gamma(img, gamma = 0.4)
+
+plt.figure(3)
+plt.imshow(img_gamma_2, cmap = 'gray')
+plt.title('Gamma Corrected Image 2')
+
+plt.figure(4)
+plt.hist(img)
+plt.title('Imput Image Histogram')
+
+plt.figure(13)
+plt.hist(img_adjustLog)
+plt.title('Log transformation histogram')
+
+plt.figure(5)
+plt.hist(img_gamma1)
+plt.title('Gamma Corrected Image 1 Histogram')
+
+plt.figure(6)
+plt.hist(img_gamma_2)
+plt.title('Gamma Corrected Image 2 Histogram')
+
+img_hist_equal = equalize_hist(img)
+
+plt.figure(7)
+plt.imshow(img_hist_equal, cmap = 'gray')
+plt.title('Histogram Equalized Image')
+
+plt.figure(8)
+plt.hist(img_hist_equal)
+plt.title('Histogram Equalized Image Histogram')
+
+
+
+
+#Reference: https://stackoverflow.com/questions/22937589/how-to-add-noise-gaussian-salt-and-pepper-etc-to-image-in-python-with-opencv
+def sp_noise(image,prob):
+    '''
+    Add salt and pepper noise to image
+    prob: Probability of the noise
+    '''
+    output = np.zeros(image.shape,np.uint8)
+    thres = 1 - prob 
+    for i in range(image.shape[0]):
+        for j in range(image.shape[1]):
+            rdn = random.random()
+            if rdn < prob:
+                output[i][j] = 0
+            elif rdn > thres:
+                output[i][j] = 255
+            else:
+                output[i][j] = image[i][j]
+    return output
+
+img_noise = sp_noise(img, 0.1)
+
+plt.figure(9)
+plt.imshow(img_noise, cmap = 'gray')
+plt.title('Noisy Input Image')
+
+img_flt = median(img_noise)
+
+plt.figure(10)
+plt.imshow(img_flt, cmap = 'gray')
+plt.title('Filtered Noisy Input Image')
